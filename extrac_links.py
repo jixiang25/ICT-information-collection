@@ -37,6 +37,15 @@ class NetSpider(object):
         r.encoding = 'utf-8'
         soup = BeautifulSoup(r.text, features='lxml')
         a_links = soup.find_all('a')
+        # 当前url所在的相对路径,假设http://www.ict.ac.cn/jssgk/,相对路径就是http://www.ict.ac.cn/jssgk/
+        # 但是http://www.ict.ac.cn/jssgk/20191006.html的相对路径是http://www.ict.ac.cn/jssgk/
+        url_prefix = url
+        if self.__match_pattern('.html', url, type='suffix'):
+            pos = -1
+            for idx in range(url_prefix):
+                if url_prefix[idx] == '/':
+                    pos = idx
+            url_prefix = url_prefix[:pos]
         for a_link_label in a_links:
             if a_link_label.get('href') is not None:
                 a_link = a_link_label['href']
@@ -46,14 +55,16 @@ class NetSpider(object):
             # 前缀是./先做替换
             if self.__match_pattern(a_link, './', type='prefix'):
                 if url[-1] == '/':
-                    a_link = url + a_link[2:]
+                    a_link = url_prefix + a_link[2:]
                 else:
-                    a_link = url + '/' + a_link[2:]
-            # 出现就不再访问
+                    a_link = url_prefix + '/' + a_link[2:]
+            # 出现就不再访问，并且这里要排除等价域名
             if self.links_mp.get(a_link) is not None:
                 continue
-            if a_link == 'http://www.ict.cas.cn/yjdgs/200902/t20090204_2179171.html':
-                raise ValueError(url)
+            if self.links_mp.get(a_link.replace('http://www.ict.cas.cn', 'http://www.ict.ac.cn')) is not None:
+                continue
+            if self.links_mp.get(a_link.replace('http://www.ict.ac.cn', 'http://www.ict.cas.cn')) is not None:
+                continue
             # 前缀检查
             pass_prefix_check = False
             for prefix in self.ALLOW_URL_PREFIX:
@@ -74,6 +85,7 @@ class NetSpider(object):
             if self.__match_pattern(a_link, 'pdf', type='suffix'):
                 if self.pdf_mp.get(a_link) is None:
                     self.pdf_links.append(a_link)
+                    self.pdf_mp[a_link] = 1
                 continue
             # 入队并标记
             Q.put(a_link)
@@ -100,6 +112,7 @@ class NetSpider(object):
         with open(pdf_file_dir, 'w') as f:
             for a_link in self.pdf_links:
                 f.write(a_link + '\n')
+
 
 def main():
     spider = NetSpider()
