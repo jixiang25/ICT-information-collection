@@ -40,9 +40,9 @@ class NetSpider(object):
         # 当前url所在的相对路径,假设http://www.ict.ac.cn/jssgk/,相对路径就是http://www.ict.ac.cn/jssgk/
         # 但是http://www.ict.ac.cn/jssgk/20191006.html的相对路径是http://www.ict.ac.cn/jssgk/
         url_prefix = url
-        if self.__match_pattern('.html', url, type='suffix'):
+        if self.__match_pattern(url, '.html', type='suffix'):
             pos = -1
-            for idx in range(url_prefix):
+            for idx in range(len(url_prefix)):
                 if url_prefix[idx] == '/':
                     pos = idx
             url_prefix = url_prefix[:pos]
@@ -83,7 +83,9 @@ class NetSpider(object):
                 continue
             # 检查是不是pdf
             if self.__match_pattern(a_link, 'pdf', type='suffix'):
-                if self.pdf_mp.get(a_link) is None:
+                if self.pdf_mp.get(a_link) is None \
+                        and self.pdf_mp.get(a_link.replace('http://www.ict.cas.cn', 'http://www.ict.ac.cn')) is None \
+                        and self.pdf_mp.get(a_link.replace('http://www.ict.ac.cn', 'http://www.ict.cas.cn')) is None:
                     self.pdf_links.append(a_link)
                     self.pdf_mp[a_link] = 1
                 continue
